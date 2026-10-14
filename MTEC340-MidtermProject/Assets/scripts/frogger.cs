@@ -3,15 +3,19 @@ using System.Collections;
 
 public class frogger : MonoBehaviour
 {
+   AudioSource _source;
    private SpriteRenderer spriteRenderer;
    public Sprite idleSprite;
    public Sprite leapSprite;
    public Sprite deadSprite;
    private Vector3 spawnPoint;
    private float farthestRow;
+   [SerializeField] private AudioClip moveSFX;
+   [SerializeField] private AudioClip dieSFX;
 
    private void Awake()
    {
+	  _source = GetComponent<AudioSource>();
       spriteRenderer = GetComponent<SpriteRenderer>();
       spawnPoint = transform.position;
    }
@@ -72,7 +76,10 @@ public class frogger : MonoBehaviour
             Object.FindAnyObjectByType<GameManager>().newRow();
          }
          StartCoroutine(Leap(destination));  
+	    _source.pitch = Random.Range(0.8f, 1.2f);
+		_source.PlayOneShot(moveSFX);
       }
+	
    }
 
    private IEnumerator Leap(Vector3 destination)
@@ -102,6 +109,7 @@ public class frogger : MonoBehaviour
       enabled  = false;
       
       Object.FindAnyObjectByType<GameManager>().Died();
+	  _source.PlayOneShot(dieSFX);
    }
 
    public void Respawn()

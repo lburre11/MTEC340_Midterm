@@ -5,11 +5,13 @@ public class moveCycle : MonoBehaviour
     public Vector2 direction = Vector2.right;
     public float speed = 1.0f;
     public int size = 1;
+    private GameManager gameManager;
     private Vector3 leftEdge;
     private Vector3 rightEdge;
 
     private void Start()
     {
+        gameManager = Object.FindAnyObjectByType<GameManager>();
         Camera mainCamera = Camera.main;
         leftEdge = mainCamera.ViewportToWorldPoint(Vector3.zero);
         rightEdge = mainCamera.ViewportToWorldPoint(Vector3.right);
@@ -31,7 +33,7 @@ public class moveCycle : MonoBehaviour
         }
         else
         {
-            transform.Translate(direction * speed * Time.deltaTime);
+            transform.Translate(direction * (speed + gameManager.levelNumber / 2f) * Time.deltaTime);
         }
     }
 

@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class home : MonoBehaviour
 {
+    AudioSource _source;
+    [SerializeField] private AudioClip imHomeSFX;
     public GameObject frog;
 
     private void OnEnable()
