@@ -5,6 +5,7 @@ public class frogger : MonoBehaviour
 {
    AudioSource _source;
    private SpriteRenderer spriteRenderer;
+   private BoxCollider2D frogCollider;
    public Sprite idleSprite;
    public Sprite leapSprite;
    public Sprite deadSprite;
@@ -12,11 +13,16 @@ public class frogger : MonoBehaviour
    private float farthestRow;
    [SerializeField] private AudioClip moveSFX;
    [SerializeField] private AudioClip dieSFX;
+   [SerializeField] public bool powerUpActive;
+   [SerializeField] public SpriteRenderer shieldSprite;
+
 
    private void Awake()
    {
 	  _source = GetComponent<AudioSource>();
       spriteRenderer = GetComponent<SpriteRenderer>();
+	  shieldSprite.enabled = false;
+	  frogCollider = GetComponent<BoxCollider2D>();
       spawnPoint = transform.position;
    }
    private void Update()
@@ -41,14 +47,15 @@ public class frogger : MonoBehaviour
          transform.rotation = Quaternion.Euler(0f, 0f, -90f);
          Move(Vector3.right);
       }
+	  
    }
-
    private void Move(Vector3 direction)
    {
       Vector3 destination = transform.position + direction;
       Collider2D barrier = Physics2D.OverlapBox(destination, Vector2.zero, 0f, LayerMask.GetMask("barrier"));
       Collider2D platform = Physics2D.OverlapBox(destination, Vector2.zero, 0f, LayerMask.GetMask("platform"));
       Collider2D obstacle = Physics2D.OverlapBox(destination, Vector2.zero, 0f, LayerMask.GetMask("obstacle"));
+      Collider2D water = Physics2D.OverlapBox(destination, Vector2.zero, 0f, LayerMask.GetMask("water"));
       if (barrier != null)
       {
          return;
@@ -65,21 +72,36 @@ public class frogger : MonoBehaviour
 
       if (obstacle != null && platform == null)
       {
-         transform.position = destination;
+         if (!powerUpActive)
+         {
+            death();
+         }
+         else
+         {
+            MoveToDestination(destination);
+         }
+      }
+      if (water != null && platform == null)
+      {
          death();
       }
       else
       {
-         if (destination.y > farthestRow)
-         {
-            farthestRow = destination.y;
-            Object.FindAnyObjectByType<GameManager>().newRow();
-         }
-         StartCoroutine(Leap(destination));  
-	    _source.pitch = Random.Range(0.8f, 1.2f);
-		_source.PlayOneShot(moveSFX);
+         MoveToDestination(destination);
       }
-	
+   }
+
+   private void MoveToDestination(Vector3 destination)
+   {
+      if (destination.y > farthestRow)
+      {
+         farthestRow = destination.y;
+         Object.FindAnyObjectByType<GameManager>().newRow();
+      }
+
+      StartCoroutine(Leap(destination));
+      _source.pitch = Random.Range(0.8f, 1.2f);
+      _source.PlayOneShot(moveSFX);
    }
 
    private IEnumerator Leap(Vector3 destination)
@@ -114,7 +136,7 @@ public class frogger : MonoBehaviour
 
    public void Respawn()
    {
-      StopAllCoroutines();
+      StopCoroutine("Leap");
       transform.rotation = Quaternion.identity;
       transform.position = spawnPoint;
       farthestRow = spawnPoint.y;
@@ -125,9 +147,22 @@ public class frogger : MonoBehaviour
 
    private void OnTriggerEnter2D(Collider2D other)
    {
-      if (enabled && other.gameObject.layer == LayerMask.NameToLayer("obstacle") && transform.parent == null)
-      {
-         death();
+	  if (!powerUpActive)
+	  {
+         if (enabled && other.gameObject.layer == LayerMask.NameToLayer("obstacle") && transform.parent == null)
+         {
+            death();
+         }
       }
+     else if (other.gameObject.layer == LayerMask.NameToLayer("obstacle") && transform.parent == null)
+	 {
+          return;
+     }
    }
+
+   public void SetPowerUpActive(bool active)
+   {
+      powerUpActive = active;
+   }
+ 
 }

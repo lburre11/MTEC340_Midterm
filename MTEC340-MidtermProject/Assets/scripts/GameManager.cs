@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
     private int time;
     public GameObject gameOverUI;
     public GameObject startGameUI;
+    public GameObject gameInfoUI;
     public TMP_Text scoreText;
     public TMP_Text livesText;
     public TMP_Text timeText;
@@ -19,7 +20,14 @@ public class GameManager : MonoBehaviour
     [SerializeField] private AudioClip levelCompleteSFX;
     [SerializeField] private AudioClip gameOverSFX;
     [SerializeField] private AudioClip BGM;
+	[SerializeField] private GameObject powerUpPrefab;
+    [SerializeField] private Vector2 minBounds;
+    [SerializeField] private Vector2 maxBounds;
+    [SerializeField, Min(0.1f)] private float spawnDelay = 8f;
+    [SerializeField, Range(0f, 1f)] private float spawnRate = 0.25f;
+	//[SerializeField] private PromptBehavior promptBehavior;
 	public int levelNumber;
+
 
     private void Awake()
     {
@@ -37,7 +45,9 @@ public class GameManager : MonoBehaviour
 		_source.Stop();
 		frogger.gameObject.SetActive(false);
         gameOverUI.SetActive(false);
+		gameInfoUI.SetActive(false);
 		startGameUI.SetActive(true);
+		//promptBehavior.StartBlink();
 		_source.clip = BGM;
 		_source.loop = true;
 		_source.volume = 0.3f;
@@ -59,6 +69,7 @@ public class GameManager : MonoBehaviour
         }
 
         startGameUI.SetActive(false);
+		gameInfoUI.SetActive(true);
         NewLevel();
     }
 
@@ -75,7 +86,9 @@ public class GameManager : MonoBehaviour
     {
         frogger.Respawn();
         StopAllCoroutines();
+        spawnBehavior = null;
         StartCoroutine(Timer(30));
+        spawn();
     }
 
     private IEnumerator Timer(int duration)
@@ -97,6 +110,11 @@ public class GameManager : MonoBehaviour
         SetScore(score + 10);
     }
 
+	public void powerUpPickup()
+    {
+		SetScore(score + 500);
+	}
+
     public void Died()
     {
         SetLives(lives - 1);
@@ -117,6 +135,7 @@ public class GameManager : MonoBehaviour
 		_source.Stop();
 		_source.PlayOneShot(gameOverSFX);
         StopAllCoroutines();
+        spawnBehavior = null;
         StartCoroutine(PlayAgain());
     }
 
@@ -166,7 +185,7 @@ public class GameManager : MonoBehaviour
         return true;
     }
     
-    private void SetScore(int score)
+    public void SetScore(int score)
     {
         this.score = score;
         scoreText.text = score.ToString();
@@ -177,4 +196,43 @@ public class GameManager : MonoBehaviour
         livesText.text = lives.ToString();
     }
     
+    private Coroutine spawnBehavior;
+    private GameObject activePowerUp;
+
+    public void spawn()
+    {
+        if (spawnBehavior == null)
+        {
+            if (powerUpPrefab == null)
+            {
+                return;
+            }
+
+            spawnBehavior = StartCoroutine(SpawnBehaviorRoutine());
+        }
+    }
+
+    public void stopSpawn()
+    {
+        if (spawnBehavior != null)
+        {
+            StopCoroutine(spawnBehavior);
+            spawnBehavior = null;
+        }
+    }
+
+    private IEnumerator SpawnBehaviorRoutine()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(spawnDelay);
+            if (activePowerUp == null && Random.value < spawnRate)
+            {
+                Vector3 position = new Vector3(Random.Range(minBounds.x, maxBounds.x),
+                    Random.Range(minBounds.y, maxBounds.y), 0f);
+
+                activePowerUp = Instantiate(powerUpPrefab, position, Quaternion.identity);
+            }
+        }
+    }
 }
