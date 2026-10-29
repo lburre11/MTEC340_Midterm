@@ -75,6 +75,7 @@ public class frogger : MonoBehaviour
          if (!powerUpActive)
          {
             death();
+            return;
          }
          else
          {
